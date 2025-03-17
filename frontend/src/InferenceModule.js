@@ -15,11 +15,11 @@ const InferenceModule = () => {
       .filter(symptom => symptom);
 
     try {
-      const response = await fetch('/api/infer', {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/infer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ symptoms })
-      });
+      });      
       const data = await response.text();
       setResult(data);
     } catch (error) {
