@@ -27,9 +27,9 @@ def infer_species_and_treatment(user_symptoms):
     symptoms_list = user_symptoms.lower().split()
 
     cursor.execute("""
-        SELECT s.SpeciesID, s.CommonName, s.ScientificName, s.Reference, es.LocalEffects, es.SystemicEffects
+        SELECT s.species_id, s.common_name, s.scientific_name, s.reference, es.symptom, es.onset_time, es.duration
         FROM Envenomation_Symptoms es
-        JOIN Species s ON es.SpeciesID = s.SpeciesID
+        JOIN Species s ON es.species_id = s.species_id
     """)
 
     rows = cursor.fetchall()
@@ -42,8 +42,8 @@ def infer_species_and_treatment(user_symptoms):
 
     # Apply fuzzy matching
     for row in rows:
-        species_id, common_name, scientific_name, reference, local_effects, systemic_effects = row
-        combined_text = f"{local_effects} {systemic_effects}"
+        species_id, common_name, scientific_name, reference, symptom, onset_time, duration = row
+        combined_text = f"{symptom} {onset_time} {duration}"
         match_score = fuzzy_match(symptoms_list, combined_text)
 
         if match_score > 30:
@@ -52,8 +52,9 @@ def infer_species_and_treatment(user_symptoms):
                 "CommonName": common_name,
                 "ScientificName": scientific_name,
                 "Reference": reference if reference else "No reference available",
-                "LocalEffects": local_effects,
-                "SystemicEffects": systemic_effects,
+                "Symptom": symptom,
+                "OnsetTime": onset_time,
+                "Duration": duration,
                 "MatchScore": match_score
             })
 
@@ -92,8 +93,9 @@ def infer_species_and_treatment(user_symptoms):
         reference = species["Reference"]
         result_lines.append(f"\nSpecies: {species_name} ({scientific_name})")
         result_lines.append(f"- Match Score: {match_score}%")
-        result_lines.append(f"- Local Effects: {species['LocalEffects']}")
-        result_lines.append(f"- Systemic Effects: {species['SystemicEffects']}")
+        result_lines.append(f"- Symptom: {species['Symptom']}")
+        result_lines.append(f"- Onset Time: {species['OnsetTime']}")
+        result_lines.append(f"- Duration: {species['Duration']}")
         result_lines.append(f"- Reference: {reference}")
         if species_name in treatments:
             treatment = treatments[species_name]
