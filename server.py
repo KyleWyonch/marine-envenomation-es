@@ -20,7 +20,7 @@ def fuzzy_match(symptoms_list, text):
     return score
 
 def infer_species_and_treatment(user_symptoms):
-    conn = sqlite3.connect("./knowledge-base-mar-8")
+    conn = sqlite3.connect("./knowledge-base-recursive")
     cursor = conn.cursor()
 
     # Split user symptoms for better matching
