@@ -113,5 +113,9 @@ def infer():
     result = infer_species_and_treatment(symptoms)
     return result, 200
 
+@app.route('/')
+def index():
+    return "Marine Envenomation Backend is Live!"
+
 if __name__ == '__main__':
     app.run(debug=True)
