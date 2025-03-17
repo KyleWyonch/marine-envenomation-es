@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 import sqlite3
 from rapidfuzz import fuzz
 from flask_cors import CORS
+from flask import make_response
 import logging
 
 app = Flask(__name__)
@@ -104,8 +105,16 @@ def infer_species_and_treatment(user_symptoms):
 
     return "\n".join(result_lines)
 
-@app.route('/api/infer', methods=['POST'])
+@app.route('/api/infer', methods=['POST', 'OPTIONS'])
 def infer():
+    if request.method == 'OPTIONS':
+        # Handle preflight request manually
+        response = make_response()
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        return response, 200
+
     data = request.get_json()
     if not data or 'symptoms' not in data:
         return jsonify({'error': 'Missing symptoms in request'}), 400
