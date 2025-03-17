@@ -15,11 +15,11 @@ const InferenceModule = () => {
       .filter(symptom => symptom);
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/infer`, {
+      const response = await fetch('https://my-es-backend-a55fb8f634ff.herokuapp.com/api/infer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ symptoms })
-      });      
+      });
       const data = await response.text();
       setResult(data);
     } catch (error) {
@@ -30,7 +30,6 @@ const InferenceModule = () => {
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
       <h1>Marine Envenomation Expert System</h1>
-      <p></p>
       <h2>Symptom Inference</h2>
       <form onSubmit={handleSubmit}>
         <textarea
