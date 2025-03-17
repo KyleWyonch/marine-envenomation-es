@@ -1,9 +1,11 @@
 from flask import Flask, request, jsonify
 import sqlite3
 from rapidfuzz import fuzz
+from flask_cors import CORS
 import logging
 
 app = Flask(__name__)
+CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
