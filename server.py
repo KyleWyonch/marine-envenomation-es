@@ -20,16 +20,16 @@ def fuzzy_match(symptoms_list, text):
     return score
 
 def infer_species_and_treatment(user_symptoms):
-    conn = sqlite3.connect("./knowledge-base-recursive")
+    conn = sqlite3.connect("./knowledge-base-recursive.db")
     cursor = conn.cursor()
 
     # Split user symptoms for better matching
     symptoms_list = user_symptoms.lower().split()
 
     cursor.execute("""
-        SELECT s.SpeciesID, s.CommonName, s.ScientificName, s.Reference, sym.LocalEffects, sym.SystemicEffects
-        FROM Symptoms sym
-        JOIN Species s ON sym.SpeciesID = s.SpeciesID
+        SELECT s.SpeciesID, s.CommonName, s.ScientificName, s.Reference, es.LocalEffects, es.SystemicEffects
+        FROM Envenomation_Symptoms es
+        JOIN Species s ON es.SpeciesID = s.SpeciesID
     """)
 
     rows = cursor.fetchall()
