@@ -26,30 +26,26 @@ def infer_species_and_treatment(user_symptoms):
     cursor = conn.cursor()
     symptoms_list = user_symptoms.lower().split()
 
+    # Step 1: Match symptoms
     cursor.execute("""
-        SELECT s.species_id, s.common_name, s.scientific_name, s.reference, es.symptom, es.onset_time, es.duration
+        SELECT es.species_id, es.symptom, es.onset_time, es.duration
         FROM Envenomation_Symptoms es
-        JOIN Species s ON es.species_id = s.species_id
     """)
     rows = cursor.fetchall()
 
     if not rows:
         conn.close()
-        return "No species data found in the database."
+        return "No symptom data found in the database."
 
     probable_species = []
 
     for row in rows:
-        species_id, common_name, scientific_name, reference, symptom, onset_time, duration = row
-        combined_text = f"{symptom} {onset_time} {duration}"
+        species_id, symptom, onset_time, duration = row
+        combined_text = f"{symptom} {onset_time or ''} {duration or ''}"
         match_score = fuzzy_match(symptoms_list, combined_text)
-
         if match_score > 30:
             probable_species.append({
                 "SpeciesID": species_id,
-                "CommonName": common_name,
-                "ScientificName": scientific_name,
-                "Reference": reference if reference else "No reference available",
                 "Symptom": symptom,
                 "OnsetTime": onset_time,
                 "Duration": duration,
@@ -62,44 +58,48 @@ def infer_species_and_treatment(user_symptoms):
 
     probable_species.sort(key=lambda x: x["MatchScore"], reverse=True)
 
-    treatments = {}
+    result_lines = ["Probable Species and Recommended Treatments:"]
+
     for species in probable_species:
         species_id = species["SpeciesID"]
+
+        # Step 2: Get common name
+        cursor.execute("SELECT common_name FROM Common_Names WHERE species_id = ? LIMIT 1", (species_id,))
+        common_name = cursor.fetchone()
+        species["CommonName"] = common_name[0] if common_name else "Unknown"
+
+        # Step 3: Get reference
+        cursor.execute("SELECT citation FROM References_Table WHERE species_id = ? LIMIT 1", (species_id,))
+        reference = cursor.fetchone()
+        species["Reference"] = reference[0] if reference else "No reference available"
+
+        # Step 4: Get treatment info
         cursor.execute("""
-            SELECT FirstAidImmediateCare, MedicalInterventions, SpecializedTreatments
-            FROM TreatmentProtocols
-            WHERE SpeciesID = ?
+            SELECT first_aid, hospital_treatment, prognosis
+            FROM Treatment_Protocols
+            WHERE species_id = ?
         """, (species_id,))
         treatment_data = cursor.fetchone()
         if treatment_data:
-            treatments[species["CommonName"]] = {
-                "First Aid": treatment_data[0],
-                "Medical Interventions": treatment_data[1],
-                "Specialized Treatments": treatment_data[2]
-            }
+            species["FirstAid"] = treatment_data[0]
+            species["HospitalTreatment"] = treatment_data[1]
+            species["Prognosis"] = treatment_data[2]
 
-    conn.close()
-
-    result_lines = ["Probable Species and Recommended Treatments:"]
-    for species in probable_species:
-        species_name = species["CommonName"]
-        scientific_name = species["ScientificName"]
-        match_score = species["MatchScore"]
-        reference = species["Reference"]
-        result_lines.append(f"\nSpecies: {species_name} ({scientific_name})")
-        result_lines.append(f"- Match Score: {match_score}%")
+        # === Assemble output ===
+        result_lines.append(f"\nSpecies: {species['CommonName']}")
+        result_lines.append(f"- Match Score: {species['MatchScore']}%")
         result_lines.append(f"- Symptom: {species['Symptom']}")
         result_lines.append(f"- Onset Time: {species['OnsetTime']}")
         result_lines.append(f"- Duration: {species['Duration']}")
-        result_lines.append(f"- Reference: {reference}")
-        if species_name in treatments:
-            treatment = treatments[species_name]
+        result_lines.append(f"- Reference: {species['Reference']}")
+        if "FirstAid" in species:
             result_lines.append("\n**Recommended Treatment:**")
-            result_lines.append(f"- First Aid: {treatment['First Aid']}")
-            result_lines.append(f"- Medical Interventions: {treatment['Medical Interventions']}")
-            result_lines.append(f"- Specialized Treatments: {treatment['Specialized Treatments']}")
+            result_lines.append(f"- First Aid: {species['FirstAid']}")
+            result_lines.append(f"- Hospital Treatment: {species['HospitalTreatment']}")
+            result_lines.append(f"- Prognosis: {species['Prognosis']}")
         result_lines.append("=" * 80)
 
+    conn.close()
     return "\n".join(result_lines)
 
 # === API Endpoint ===
