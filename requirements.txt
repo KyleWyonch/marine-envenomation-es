@@ -1,3 +1,5 @@
-Flask
+flask
+flask_cors
 gunicorn
 rapidfuzz
+sqlite3  # optional (it’s part of stdlib but some like to list it)
