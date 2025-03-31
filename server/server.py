@@ -72,6 +72,11 @@ def infer_species_and_treatment(user_symptoms):
         """, (species_id, reference_id))
         common_name = cursor.fetchone()
         species["CommonName"] = common_name[0] if common_name else "Unknown"
+        # Get picture from Species table
+        cursor.execute("SELECT picture FROM Species WHERE species_id = ?", (species_id,))
+        picture_row = cursor.fetchone()
+        species["Picture"] = picture_row[0] if picture_row else None
+
 
         # Step 3: Get reference DOI (new way)
         cursor.execute("SELECT doi FROM References_Table WHERE reference_id = ?", (reference_id,))
@@ -131,6 +136,10 @@ def infer():
     return result, 200
 
 # === Serve React frontend ===
+@app.route('/species_images/<path:filename>')
+def serve_species_image(filename):
+    return send_from_directory(os.path.join(BASE_DIR, 'species_images'), filename)
+
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
@@ -138,6 +147,3 @@ def serve(path):
         return send_from_directory(app.static_folder, path)
     else:
         return send_from_directory(app.static_folder, 'index.html')
-@app.route('/species_images/<path:filename>')
-def serve_species_image(filename):
-    return send_from_directory(os.path.join(BASE_DIR, 'species_images'), filename)
