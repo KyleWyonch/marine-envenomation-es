@@ -22,13 +22,13 @@ def fuzzy_match(symptoms_list, text):
 
 def infer_species_and_treatment(user_symptoms):
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    conn = sqlite3.connect(os.path.join(BASE_DIR, "knowledge-base-recursive.db"))
+    conn = sqlite3.connect(os.path.join(BASE_DIR, "knowledge-base.db"))
     cursor = conn.cursor()
     symptoms_list = user_symptoms.lower().split()
 
-    # Step 1: Match symptoms
+    # Step 1: Match symptoms (now includes reference_id)
     cursor.execute("""
-        SELECT es.species_id, es.symptom, es.onset_time, es.duration
+        SELECT es.species_id, es.reference_id, es.symptom, es.onset_time, es.duration
         FROM Envenomation_Symptoms es
     """)
     rows = cursor.fetchall()
@@ -40,12 +40,13 @@ def infer_species_and_treatment(user_symptoms):
     probable_species = []
 
     for row in rows:
-        species_id, symptom, onset_time, duration = row
+        species_id, reference_id, symptom, onset_time, duration = row
         combined_text = f"{symptom} {onset_time or ''} {duration or ''}"
         match_score = fuzzy_match(symptoms_list, combined_text)
         if match_score > 30:
             probable_species.append({
                 "SpeciesID": species_id,
+                "ReferenceID": reference_id,
                 "Symptom": symptom,
                 "OnsetTime": onset_time,
                 "Duration": duration,
@@ -62,23 +63,27 @@ def infer_species_and_treatment(user_symptoms):
 
     for species in probable_species:
         species_id = species["SpeciesID"]
+        reference_id = species["ReferenceID"]
 
         # Step 2: Get common name
-        cursor.execute("SELECT common_name FROM Common_Names WHERE species_id = ? LIMIT 1", (species_id,))
+        cursor.execute("""
+            SELECT common_name FROM Common_Names
+            WHERE species_id = ? AND reference_id = ? LIMIT 1
+        """, (species_id, reference_id))
         common_name = cursor.fetchone()
         species["CommonName"] = common_name[0] if common_name else "Unknown"
 
-        # Step 3: Get reference
-        cursor.execute("SELECT citation FROM References_Table WHERE species_id = ? LIMIT 1", (species_id,))
+        # Step 3: Get reference DOI (new way)
+        cursor.execute("SELECT doi FROM References_Table WHERE reference_id = ?", (reference_id,))
         reference = cursor.fetchone()
         species["Reference"] = reference[0] if reference else "No reference available"
 
-        # Step 4: Get treatment info
+        # Step 4: Get treatment info (from Treatment_Protocols)
         cursor.execute("""
             SELECT first_aid, hospital_treatment, prognosis
             FROM Treatment_Protocols
-            WHERE species_id = ?
-        """, (species_id,))
+            WHERE species_id = ? AND reference_id = ?
+        """, (species_id, reference_id))
         treatment_data = cursor.fetchone()
         if treatment_data:
             species["FirstAid"] = treatment_data[0]
@@ -91,7 +96,11 @@ def infer_species_and_treatment(user_symptoms):
         result_lines.append(f"- Symptom: {species['Symptom']}")
         result_lines.append(f"- Onset Time: {species['OnsetTime']}")
         result_lines.append(f"- Duration: {species['Duration']}")
-        result_lines.append(f"- Reference: {species['Reference']}")
+        if species["Reference"] != "No reference available":
+            doi_url = f"https://dx.doi.org/{species['Reference']}"
+            result_lines.append(f'- Reference: <a href="{doi_url}" target="_blank">[Ref]</a>')
+        else:
+            result_lines.append("- Reference: No reference available")
         if "FirstAid" in species:
             result_lines.append("\n**Recommended Treatment:**")
             result_lines.append(f"- First Aid: {species['FirstAid']}")
