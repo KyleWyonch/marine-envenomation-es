@@ -8,6 +8,7 @@ import os
 # React static files will be served from here:
 app = Flask(__name__, static_folder='../client/build', static_url_path='/')
 CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Logging
 logging.basicConfig(level=logging.INFO)
@@ -21,7 +22,6 @@ def fuzzy_match(symptoms_list, text):
     return score
 
 def infer_species_and_treatment(user_symptoms):
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     conn = sqlite3.connect(os.path.join(BASE_DIR, "knowledge-base.db"))
     cursor = conn.cursor()
     symptoms_list = user_symptoms.lower().split()
@@ -92,6 +92,8 @@ def infer_species_and_treatment(user_symptoms):
 
         # === Assemble output ===
         result_lines.append(f"\nSpecies: {species['CommonName']}")
+        if species.get("Picture"):
+            result_lines.append(f'<img src="/{species["Picture"]}" alt="{species["CommonName"]}" style="max-width:300px; border-radius:8px; margin-top:10px;" />')
         result_lines.append(f"- Match Score: {species['MatchScore']}%")
         result_lines.append(f"- Symptom: {species['Symptom']}")
         result_lines.append(f"- Onset Time: {species['OnsetTime']}")
@@ -136,3 +138,6 @@ def serve(path):
         return send_from_directory(app.static_folder, path)
     else:
         return send_from_directory(app.static_folder, 'index.html')
+@app.route('/species_images/<path:filename>')
+def serve_species_image(filename):
+    return send_from_directory(os.path.join(BASE_DIR, 'species_images'), filename)
