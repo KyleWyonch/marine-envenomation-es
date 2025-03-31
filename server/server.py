@@ -97,7 +97,11 @@ def infer_species_and_treatment(user_symptoms):
         # === Assemble output ===
         result_lines.append(f"\nSpecies: {species['CommonName']}")
         if species.get("Picture"):
-            result_lines.append(f'<img src="/{species["Picture"]}" alt="{species["CommonName"]}" style="max-width:300px; border-radius:8px; margin-top:10px;" />')
+            img_path = species["Picture"]
+            if img_path and not img_path.startswith('/'):
+                img_path = '/' + img_path
+            result_lines.append(f'<img src="{img_path}" alt="{species["CommonName"]}" style="max-width:300px; border-radius:8px; margin-top:10px;" />')
+
         result_lines.append(f"- Match Score: {species['MatchScore']}%")
         result_lines.append(f"- Symptom: {species['Symptom']}")
         result_lines.append(f"- Onset Time: {species['OnsetTime']}")
