@@ -100,8 +100,10 @@ def infer_species_and_treatment(user_symptoms):
             img_path = species["Picture"]
             if img_path and not img_path.startswith('/'):
                 img_path = '/' + img_path
-            result_lines.append(f'<img src="{img_path}" alt="{species["CommonName"]}" style="max-width:300px; border-radius:8px; margin-top:10px;" />')
-
+            result_lines.append(
+                f'<img src="{img_path}" alt="{species["CommonName"]}" '
+                f'style="max-width:300px; border-radius:8px; margin-top:10px;" />'
+            )
         result_lines.append(f"- Match Score: {species['MatchScore']}%")
         result_lines.append(f"- Symptom: {species['Symptom']}")
         result_lines.append(f"- Onset Time: {species['OnsetTime']}")
@@ -139,10 +141,6 @@ def infer():
     return result, 200
 
 # === Serve React frontend ===
-@app.route('/species_images/<path:filename>')
-def serve_species_image(filename):
-    return send_from_directory(os.path.join(BASE_DIR, 'species_images'), filename)
-
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
