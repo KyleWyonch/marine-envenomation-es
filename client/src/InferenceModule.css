@@ -42,12 +42,12 @@
   }
   
   .species-image {
-    max-width: 100%;
+    width: 150px;
     height: auto;
     border-radius: 8px;
     margin: 10px 0;
   }
-  
+    
   .treatment {
     background-color: #f1f8ff;
     padding: 10px;

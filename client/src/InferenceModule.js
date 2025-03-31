@@ -39,7 +39,7 @@ const InferenceModule = () => {
           <div className="species-card" key={i}>
             <h2>{res.common_name}</h2>
             {res.image && <img src={res.image} alt={res.common_name} className="species-image" />}
-            <p><strong>Match Score:</strong> {res.match_score}%</p>
+            <p><strong>Match Score:</strong> {res.match_score.toFixed(2)}%</p>
             <p><strong>Symptom:</strong> {res.symptom}</p>
             <p><strong>Onset Time:</strong> {res.onset_time}</p>
             <p><strong>Duration:</strong> {res.duration}</p>
