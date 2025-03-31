@@ -50,13 +50,12 @@ const InferenceModule = () => {
             marginTop: '20px',
             padding: '10px',
             backgroundColor: '#f9f9f9',
-            border: '1px solid #ddd',
-            whiteSpace: 'pre-wrap'
+            border: '1px solid #ddd'
           }}
-        >
-          {result}
-        </div>
+          dangerouslySetInnerHTML={{ __html: result }}
+        />
       )}
+
     </div>
   );
 };
