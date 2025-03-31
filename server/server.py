@@ -12,6 +12,62 @@ CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# === Symptom Normalization Dictionary ===
+SYMPTOM_NORMALIZATION_DICT = {
+    "tingling": "paresthesia",
+    "numbness": "hypoesthesia",
+    "burning": "burning sensation",
+    "itching": "pruritus",
+    "itchiness": "pruritus",
+    "swelling": "edema",
+    "redness": "erythema",
+    "blue skin": "cyanosis",
+    "pale skin": "pallor",
+    "blisters": "vesicles",
+    "welts": "urticaria",
+    "hives": "urticaria",
+    "rash": "dermatitis",
+    "pain": "localized pain",
+    "muscle pain": "myalgia",
+    "joint pain": "arthralgia",
+    "abdominal pain": "abdominal cramps",
+    "headache": "cephalalgia",
+    "dizziness": "vertigo",
+    "nausea": "nausea",
+    "vomiting": "emesis",
+    "diarrhea": "diarrhea",
+    "fainting": "syncope",
+    "shortness of breath": "dyspnea",
+    "trouble breathing": "dyspnea",
+    "difficulty breathing": "dyspnea",
+    "rapid heartbeat": "tachycardia",
+    "slow heartbeat": "bradycardia",
+    "high blood pressure": "hypertension",
+    "low blood pressure": "hypotension",
+    "convulsions": "seizures",
+    "shaking": "tremors",
+    "muscle spasms": "spasms",
+    "paralysis": "paralysis",
+    "sweating": "diaphoresis",
+    "confusion": "disorientation",
+    "hallucinations": "visual disturbances",
+    "chills": "shivering",
+    "fever": "pyrexia",
+    "blurred vision": "vision disturbances",
+    "drooping eyelids": "ptosis",
+    "excessive salivation": "hypersalivation",
+    "difficulty swallowing": "dysphagia",
+    "difficulty speaking": "dysarthria",
+    "loss of coordination": "ataxia",
+    "muscle weakness": "muscular weakness",
+    "chest tightness": "chest discomfort",
+    "cyanotic lips": "cyanosis"
+}
+
+def normalize_user_input(text):
+    words = text.lower().split()
+    return ' '.join(SYMPTOM_NORMALIZATION_DICT.get(word, word) for word in words)
+
 
 def fuzzy_match(symptoms_list, text):
     score = 0
@@ -24,7 +80,8 @@ def infer_species_and_treatment(user_symptoms):
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     conn = sqlite3.connect(os.path.join(BASE_DIR, "knowledge-base.db"))
     cursor = conn.cursor()
-    symptoms_list = user_symptoms.lower().split()
+    normalized_input = normalize_user_input(user_symptoms)
+    symptoms_list = normalized_input.split()
 
     cursor.execute("""
         SELECT es.species_id, es.reference_id, es.symptom, es.onset_time, es.duration
@@ -82,7 +139,7 @@ def infer_species_and_treatment(user_symptoms):
         results.append({
             "common_name": common_name[0] if common_name else "Unknown",
             "image": img_path,
-            "match_score": species["match_score"],
+            "match_score": round(species["match_score"], 2),
             "symptom": species["symptom"],
             "onset_time": species["onset_time"],
             "duration": species["duration"],
