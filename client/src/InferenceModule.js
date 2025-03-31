@@ -1,61 +1,64 @@
 import React, { useState } from 'react';
+import './InferenceModule.css';
 
 const InferenceModule = () => {
   const [symptoms, setSymptoms] = useState('');
-  const [result, setResult] = useState('');
+  const [results, setResults] = useState([]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Normalize user input
-    const normalizedSymptoms = symptoms
-      .toLowerCase()
-      .trim()
-      .split(/[\s,]+/)
-      .filter(symptom => symptom);
 
     try {
       const response = await fetch('/api/infer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ symptoms })
-      });      
-      const data = await response.text();
-      setResult(data);
+      });
+      const data = await response.json();
+      setResults(data);
     } catch (error) {
-      setResult('Error: ' + error.message);
+      console.error('Inference error:', error);
     }
   };
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+    <div className="inference-container">
       <h1>Marine Envenomation Expert System</h1>
-      <h2>Symptom Inference</h2>
       <form onSubmit={handleSubmit}>
         <textarea
           value={symptoms}
           onChange={(e) => setSymptoms(e.target.value)}
           placeholder="Enter symptoms here..."
           rows="4"
-          style={{ width: '100%', padding: '10px', fontSize: '1rem' }}
         />
-        <br />
-        <button type="submit" style={{ marginTop: '10px', padding: '10px 20px', fontSize: '1rem' }}>
-          Submit
-        </button>
+        <button type="submit">Submit</button>
       </form>
-      {result && (
-        <div
-          style={{
-            marginTop: '20px',
-            padding: '10px',
-            backgroundColor: '#f9f9f9',
-            border: '1px solid #ddd'
-          }}
-          dangerouslySetInnerHTML={{ __html: result }}
-        />
-      )}
 
+      <div className="results">
+        {results.map((res, i) => (
+          <div className="species-card" key={i}>
+            <h2>{res.common_name}</h2>
+            {res.image && <img src={res.image} alt={res.common_name} className="species-image" />}
+            <p><strong>Match Score:</strong> {res.match_score}%</p>
+            <p><strong>Symptom:</strong> {res.symptom}</p>
+            <p><strong>Onset Time:</strong> {res.onset_time}</p>
+            <p><strong>Duration:</strong> {res.duration}</p>
+            {res.doi_url ? (
+              <p><strong>Reference:</strong> <a href={res.doi_url} target="_blank" rel="noreferrer">[Ref]</a></p>
+            ) : (
+              <p><strong>Reference:</strong> No reference available</p>
+            )}
+            {res.first_aid && (
+              <div className="treatment">
+                <h3>Recommended Treatment</h3>
+                <p><strong>First Aid:</strong> {res.first_aid}</p>
+                <p><strong>Hospital Treatment:</strong> {res.hospital_treatment}</p>
+                <p><strong>Prognosis:</strong> {res.prognosis}</p>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
