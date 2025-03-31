@@ -8,7 +8,6 @@ import os
 # React static files will be served from here:
 app = Flask(__name__, static_folder='../client/build', static_url_path='/')
 CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Logging
 logging.basicConfig(level=logging.INFO)
@@ -22,6 +21,7 @@ def fuzzy_match(symptoms_list, text):
     return score
 
 def infer_species_and_treatment(user_symptoms):
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     conn = sqlite3.connect(os.path.join(BASE_DIR, "knowledge-base.db"))
     cursor = conn.cursor()
     symptoms_list = user_symptoms.lower().split()
@@ -76,7 +76,6 @@ def infer_species_and_treatment(user_symptoms):
         cursor.execute("SELECT picture FROM Species WHERE species_id = ?", (species_id,))
         picture_row = cursor.fetchone()
         species["Picture"] = picture_row[0] if picture_row else None
-
 
         # Step 3: Get reference DOI (new way)
         cursor.execute("SELECT doi FROM References_Table WHERE reference_id = ?", (reference_id,))
